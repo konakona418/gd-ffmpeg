@@ -1,5 +1,5 @@
 # For syntax, see https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
-# This workflow is automatically triggered for every push and pull request, to verify that everything still builds.
+# This workflow is automatically triggered for every push and pull request, to verify that everything still builds and passes the tests.
 
 name: Continuous Integration
 on:
@@ -9,80 +9,37 @@ on:
   merge_group:
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        # Test a few selected combinations of parameters ("test case matrix").
-        # While it would be nice to test all needed combinations, in practice this would a waste of CI usage time.
-        # By building just with a few combinations, we only need a few runners,
-        # while still achieving adequate coverage.
-        # To make a full build with all combinations, use the make_build.yml workflow instead.
-        include:
-          - target: { platform: linux, arch: x86_64, os: ubuntu-22.04 }
-            target-type: template_debug
-            float-precision: double
-          - target: { platform: windows, arch: x86_64, os: windows-latest }
-            target-type: template_release
-            float-precision: single
-          - target: { platform: macos, arch: universal, os: macos-latest }
-            target-type: template_debug
-            float-precision: single
-          - target: { platform: android, arch: arm64, os: ubuntu-22.04 }
-            target-type: template_debug
-            float-precision: single
-          - target: { platform: web, arch: wasm32, os: ubuntu-22.04 }
-            target-type: template_release
-            float-precision: double
-
-    runs-on: ${{ matrix.target.os }}
+  build-and-test:
+    runs-on: ubuntu-24.04
+    env:
+      FFMPEG_PREFIX: ${{ github.workspace }}/thirdparty/ffmpeg/linux-x86_64
+      GODOT: ${{ github.workspace }}/godot/Godot_v4.7.2-stable_linux.x86_64
     steps:
-      # Clone this repository
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
-      # Lint
-      #- name: Setup clang-format
-      #  shell: bash
-      #  run: |
-      #    python -m pip install clang-format
-      #- name: Run clang-format
-      #  shell: bash
-      #  run: |
-      #    clang-format src/** --dry-run --Werror
-
-      # Add linux x86_32 toolchain
-      - name: Install multilib support
-        if: ${{ matrix.target.platform == 'linux' && matrix.target.arch == 'x86_32' }}
+      - name: Install build dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
+          sudo apt-get update
+          sudo apt-get install -y nasm
 
-      # Setup dependencies
-      - name: Setup godot-cpp
-        uses: ./godot-cpp/.github/actions/setup-godot-cpp
+      - name: Cache FFmpeg build
+        uses: actions/cache@v4
         with:
-          platform: ${{ matrix.target.platform }}
-          em-version: 3.1.62
+          path: thirdparty/ffmpeg
+          key: ffmpeg-9.0.1-linux-x86_64-${{ hashFiles('thirdparty/build_ffmpeg.sh') }}
 
-      # Build GDExtension (with caches)
+      - name: Build minimal LGPL FFmpeg
+        run: bash thirdparty/build_ffmpeg.sh
 
-      - name: Restore .scons_cache
-        uses: ./godot-cpp/.github/actions/godot-cache-restore
-        with:
-          scons-cache: ${{ github.workspace }}/.scons-cache/
-          cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
-
-      - name: Build GDExtension Debug Build
-        shell: sh
-        env:
-          SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+      - name: Download Godot
         run: |
-          scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }}
+          mkdir -p godot
+          curl -fL -o godot.zip "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip"
+          unzip -q -o godot.zip -d godot
+          chmod +x "$GODOT"
 
-      - name: Save .scons_cache
-        uses: ./godot-cpp/.github/actions/godot-cache-save
-        with:
-          scons-cache: ${{ github.workspace }}/.scons-cache/
-          cache-name: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}
+      - name: Build and run tests
+        run: bash scripts/run_tests.sh

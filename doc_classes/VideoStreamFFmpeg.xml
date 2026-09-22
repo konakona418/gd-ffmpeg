@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VideoStreamFFmpeg" inherits="VideoStream" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		H.264 video stream backed by FFmpeg (video only).
+	</brief_description>
+	<description>
+		A [VideoStream] implementation that plays H.264 video through the bundled FFmpeg libraries. Use it with a [VideoStreamPlayer] exactly like [VideoStreamTheora]:
+
+		[codeblocks]
+		[gdscript]
+		var video: VideoStream = load("res://cutscenes/intro.mp4")
+		$VideoStreamPlayer.stream = video
+		$VideoStreamPlayer.play()
+		[/gdscript]
+		[/codeblocks]
+
+		The bundled resource loader claims [code]mp4[/code], [code]m4v[/code], [code]mov[/code], [code]h264[/code], [code]264[/code] and [code]mkv[/code] files, so [method ResourceLoader.load] returns a [VideoStreamFFmpeg] for them.
+
+		[b]Limitations:[/b] video only (audio tracks are ignored), software decoding on the main thread, H.264 only, progressive content only (no deinterlacing), and rotation metadata is not applied. The extension currently ships for Linux only.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+	</members>
+	<constants>
+	</constants>
+</class>

@@ -1,0 +1,19 @@
+[configuration]
+
+entry_symbol = "gdffmpeg_library_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+
+linux.x86_64.single.debug = "./linux/libgdffmpeg.linux.template_debug.x86_64.so"
+linux.x86_64.single.release = "./linux/libgdffmpeg.linux.template_release.x86_64.so"
+
+[dependencies]
+
+linux.x86_64 = {
+"linux/libavcodec.so.63": "",
+"linux/libavformat.so.63": "",
+"linux/libavutil.so.61": "",
+"linux/libswscale.so.10": ""
+}

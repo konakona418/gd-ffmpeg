@@ -5,6 +5,11 @@
 # Ignore library files but not the gdextension file
 /bin/**
 !project/bin/*.gdextension
+/project/addons/gdffmpeg/linux/
+
+# Bundled FFmpeg build and packaging output
+/thirdparty/ffmpeg/
+/dist/
 
 # Ignore scons database
 .sconsign*.dblite
@@ -50,3 +55,4 @@ compile_commands.json
 # Cmake
 cmake-build*
 CMakeUserPresets.json
+/project/addons/gdffmpeg/licenses/
